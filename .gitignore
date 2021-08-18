@@ -33,3 +33,6 @@
 
 # Workspace
 *.code-workspace
+
+# Clang-Format
+.clang-format
