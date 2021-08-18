@@ -31,8 +31,14 @@
 *.out
 *.app
 
-# Workspace
+# Workspace & VS Code config
 *.code-workspace
+.vscode/
 
 # Clang-Format
 .clang-format
+
+# GNU Global
+GPATH
+GRTAGS
+GTAGS
