@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# Backup and temporary files
+*.bak
+
 # Workspace & VS Code config
 *.code-workspace
 .vscode/
