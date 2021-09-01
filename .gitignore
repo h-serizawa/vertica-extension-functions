@@ -33,6 +33,7 @@
 
 # Backup and temporary files
 *.bak
+*.tmp
 
 # Workspace & VS Code config
 *.code-workspace
