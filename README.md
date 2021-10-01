@@ -12,6 +12,6 @@ All codes are provided under the license found in LICENSE file.
 
 - Long2Wide function
 
-    Transforms Long-form data to Wide-form data.
+    Transforms Long-form data to Wide-form data like PIVOT feature.
 
 Enjoy your life with Vertica!!
