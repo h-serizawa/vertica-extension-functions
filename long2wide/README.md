@@ -44,7 +44,7 @@ OVER ( PARTITION BY expression[,…] )
 ### Parameters
 |Parameter name|Set to...|
 |--|--|
-|item_list|Comma-separated observations to be displayed as columns. Maximum length is 65000.|
+|item_list|Comma-separated observations to be displayed as columns. Maximum length is 32,000,000.|
 |PARTITION BY _expression_|Expression on which to divides the rows of the function input. Expression has to be the same as the expression specified before Long2Wide function in SELECT clause.|
 
 ### Examples
@@ -108,4 +108,4 @@ To install Long2Wide function, run the following statement in vsql:
 
 ### Notes
 
-Long2Wide function has been tested in Vertica 11.0.0.
+Long2Wide function has been tested in Vertica 11.0.1.

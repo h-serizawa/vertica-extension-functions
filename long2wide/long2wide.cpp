@@ -20,8 +20,9 @@
 using namespace Vertica;
 
 const std::string ITEM_LIST = "item_list"; // parameter name for item list
-const int ITEM_LIST_MAX_LEN = 65000; // maximum length for item_list parameter
-const std::string DEBUG = "debug";   // parameter name for debug flag
+const int ITEM_LIST_MAX_LEN
+    = 32000000;                            // maximum length for item_list parameter
+const std::string DEBUG = "debug";         // parameter name for debug flag
 
 const std::string ITEM_COLUMN = "item_column"; // argument name for item column
 const std::string VALUE_COLUMN
@@ -507,7 +508,7 @@ public:
         using Properties = SizedColumnTypes::Properties;
         // Define item_list parameter.
         {
-            parameterTypes.addVarchar(
+            parameterTypes.addLongVarchar(
                 ITEM_LIST_MAX_LEN, ITEM_LIST,
                 Properties(true /* visible */, true /* required */,
                            false /* canBeNull */,
