@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2021 Hibiki Serizawa
  *
  * Description: Long2Wide : Transform the long-form data into the wide-form data
@@ -21,23 +21,23 @@ using namespace Vertica;
 
 const std::string ITEM_LIST = "item_list"; // parameter name for item list
 const int ITEM_LIST_MAX_LEN
-    = 32000000;                            // maximum length for item_list parameter
-const std::string DEBUG = "debug";         // parameter name for debug flag
+    = 32000000;                    // maximum length for item_list parameter
+const std::string DEBUG = "debug"; // parameter name for debug flag
 
 const std::string ITEM_COLUMN = "item_column"; // argument name for item column
 const std::string VALUE_COLUMN
     = "value_column"; // argument name for value column
 
 /**
- *
+ * Represent a string value using EE::StringValue to initialize VString
  */
 template<size_t maxlen> struct InlineStringValue : public EE::StringValue {
     char data[maxlen];
     InlineStringValue() { setSV(this, nullptr, "", 0); }
 };
 
-/*
- * Description: Long2Wide : Transform function class
+/**
+ * Long2Wide : Transform function class
  */
 class Long2Wide : public CursorTransformFunction
 {
@@ -50,6 +50,9 @@ class Long2Wide : public CursorTransformFunction
     vbool debugFlag;                // debug flag
 
 public:
+    /**
+     * Perform per instance initialization.
+     */
     void
     setup(ServerInterface &srvInterface, const SizedColumnTypes &argTypes)
     {
@@ -114,6 +117,9 @@ public:
         }
     }
 
+    /**
+     * Set parallelism / concurrency info.
+     */
     void
     setParallelismInfo(ServerInterface &srvInterface,
                        ParallelismInfo *parallel)
@@ -123,6 +129,9 @@ public:
                  parallel->getNumPeers());
     }
 
+    /**
+     * Process a set of rows.
+     */
     void
     processPartition(ServerInterface &srvInterface,
                      PartitionReader &inputReader,
@@ -135,6 +144,7 @@ public:
         }
 
         try {
+            // Initialize an item map using the value of item_list parameter.
             std::unordered_map<std::string, void *> itemMap = makeItemMap();
 
             // Read input values and set the tuple to the item map.
@@ -145,14 +155,16 @@ public:
                     vt_report_error(0, "Inconsistency between "
                                        "hasMoreData()=true and next()=false");
                 }
+                // Read item_column value.
                 std::string item = getArgumentRefAsString(inputReader, 0);
                 debugLog(srvInterface, "  Item value read from input is [%s]",
                          item.c_str());
-                // If item_column is null, nothing is done.
+                // If item_column value is null, nothing is done.
                 if (item.length() != 0) {
-                    // If the value of item_column is not listed in item list, nothing is done.
+                    // If item_column value is not listed in item list, nothing is done.
                     auto itr = itemMap.find(item);
                     if (itr != itemMap.end()) {
+                        // Set value_column value to item map.
                         setInputToItems(srvInterface, inputReader, 1, itemMap,
                                         item);
                     }
@@ -175,7 +187,7 @@ public:
     }
 
 private:
-    /*
+    /**
      * Get argument reference and convert it to string.
      */
     const std::string
@@ -213,7 +225,7 @@ private:
         return item;
     }
 
-    /*
+    /**
      * Read input value and set the tuple to the item map.
      */
     void
@@ -279,7 +291,7 @@ private:
         }
     }
 
-    /*
+    /**
      * Set values in item map to output.
      */
     void
@@ -382,6 +394,9 @@ private:
         }
     }
 
+    /**
+     * Convert comma-separated item list to array(vector).
+     */
     void
     separateListToItems(ServerInterface &srvInterface)
     {
@@ -414,6 +429,9 @@ private:
         }
     }
 
+    /**
+     * Count the number of delimiter in a string.
+     */
     int
     str_chnum(const char str[], char c)
     {
@@ -457,12 +475,15 @@ private:
     }
 };
 
-/*
- * Description: Long2WideFactory : Transform function factory class
+/**
+ * Long2WideFactory : Transform function factory class
  */
 class Long2WideFactory : public CursorTransformFunctionFactory
 {
 public:
+    /**
+     * Define arguments and outputs.
+     */
     void
     getPrototype(ServerInterface &srvInterface, ColumnTypes &argTypes,
                  ColumnTypes &returnType)
@@ -473,6 +494,9 @@ public:
         returnType.addAny();
     }
 
+    /**
+     * Register the data type of outputs according to the arguments.
+     */
     void
     getReturnType(ServerInterface &srvInterface,
                   const SizedColumnTypes &inputTypes,
@@ -501,6 +525,9 @@ public:
         }
     }
 
+    /**
+     * Define the parameters.
+     */
     void
     getParameterType(ServerInterface &srvInterface,
                      SizedColumnTypes &parameterTypes)
@@ -524,6 +551,9 @@ public:
         }
     }
 
+    /**
+     * Define the concurrency.
+     */
     void
     getConcurrencyModel(ServerInterface &srvInterface,
                         ConcurrencyModel &concModel)
