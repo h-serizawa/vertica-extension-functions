@@ -7,6 +7,7 @@
  * Author: Hibiki Serizawa
  */
 #include "Vertica.h"
+#include "EEUDxShared.h"
 #include <cstring>
 #include <iostream>
 #include <istream>
@@ -26,6 +27,14 @@ const std::string ITEM_COLUMN = "item_column"; // argument name for item column
 const std::string VALUE_COLUMN
     = "value_column"; // argument name for value column
 
+/**
+ *
+ */
+template<size_t maxlen> struct InlineStringValue : public EE::StringValue {
+    char data[maxlen];
+    InlineStringValue() { setSV(this, nullptr, "", 0); }
+};
+
 /*
  * Description: Long2Wide : Transform function class
  */
@@ -36,8 +45,8 @@ class Long2Wide : public CursorTransformFunction
     int itemsSize = 0;              // size of array of item list values
     BaseDataOID argTypeOIDItemCol;  // data type of item_column
     BaseDataOID argTypeOIDValueCol; // data type of value_column
-    vbool debugFlag;                // debug flag
     ParallelismInfo *pinfo;         // store for parallelism situation
+    vbool debugFlag;                // debug flag
 
 public:
     void
@@ -74,8 +83,8 @@ public:
                  argTypeValueCol.getPrettyPrintStr().c_str(),
                  argTypeOIDValueCol);
 
-        // Verify data type of first argument (item_column) is the supported
-        // type, VARCHAR/CHAR/INTEGER/NUMERIC.
+        // Verify data type of first argument (item_column) is the
+        // supported type, VARCHAR/CHAR/INTEGER/NUMERIC.
         switch (argTypeOIDItemCol) {
         case CharOID:
         case VarcharOID:
@@ -217,12 +226,19 @@ private:
         case VarcharOID: {
             const VString *tempString = inputReader.getStringPtr(idx);
             if (!tempString->isNull()) {
-                VString valueString = *tempString;
-                itemMap[item] = (void *)&valueString;
+                size_t stringLength = tempString->length() + 1;
+                char *valueString = vt_allocArray(srvInterface.allocator, char,
+                                                  stringLength);
+                std::memset(valueString, '\0', stringLength);
+                const char *tempStringChar = tempString->str().c_str();
+                for (vsize i = 0; i < tempString->length(); ++i) {
+                    valueString[i] = tempStringChar[i];
+                }
+                itemMap[item] = (void *)valueString;
                 debugLog(
-                    srvInterface, "  String value set to map[%s] is [%s], value inside map is [%s]",
-                    item.c_str(), valueString.str().c_str(),
-                    (*((VString *)itemMap[item])).str().c_str());
+                    srvInterface, "    String value set to map[%s] is [%s], value inside map is [%s]",
+                    item.c_str(), tempString->str().c_str(),
+                    (char *)itemMap[item]);
             }
         } break;
         case Int8OID: {
@@ -231,7 +247,7 @@ private:
             if (*valueInt != vint_null) {
                 itemMap[item] = valueInt;
                 debugLog(
-                    srvInterface, "  Integer value set to map[%s] is [%d], value inside map is [%d]",
+                    srvInterface, "    Integer value set to map[%s] is [%d], value inside map is [%d]",
                     item.c_str(), *valueInt, *((vint *)itemMap[item]));
             }
         } break;
@@ -242,7 +258,7 @@ private:
             if (!vfloatIsNull(*valueFloat)) {
                 itemMap[item] = (void *)valueFloat;
                 debugLog(
-                    srvInterface, "  Float value set to map[%s] is [%f], value inside map is [%f]",
+                    srvInterface, "    Float value set to map[%s] is [%f], value inside map is [%f]",
                     item.c_str(), *valueFloat, *((vfloat *)itemMap[item]));
             }
         } break;
@@ -252,7 +268,7 @@ private:
                 VNumeric valueNumeric = *tempNumeric;
                 itemMap[item] = (void *)&valueNumeric;
                 debugLog(
-                    srvInterface, "  Numeric value set to map[%s] is [%lf], value inside map is [%f]",
+                    srvInterface, "    Numeric value set to map[%s] is [%lf], value inside map is [%f]",
                     item.c_str(), valueNumeric.toFloat(),
                     (*((VNumeric *)itemMap[item])).toFloat());
             }
@@ -277,12 +293,24 @@ private:
                 std::string item = items[i];
                 auto itr = itemMap.find(item);
                 if (itr != itemMap.end() && itr->second != nullptr) {
-                    VString valueString = *((VString *)(itr->second));
-                    outputWriter.getColRefForWrite<VString>(i) = valueString;
+                    const char *tempString = (char *)(itr->second);
+                    size_t stringLength = std::strlen(tempString) + 1;
+                    char *valueString = vt_allocArray(srvInterface.allocator,
+                                                      char, stringLength);
+                    std::memset(valueString, '\0', stringLength);
+                    for (size_t j = 0; j < std::strlen(tempString); ++j) {
+                        valueString[j] = tempString[j];
+                    }
+
+                    InlineStringValue<65000> buf;
+                    VString tempVString(&buf);
+                    tempVString.alloc(stringLength);
+                    tempVString.copy(valueString, stringLength);
+                    outputWriter.getColRefForWrite<VString>(i) = tempVString;
                     debugLog(
                         srvInterface,
                         "  String value set to output[%s(index=%d)] is [%s]",
-                        item.c_str(), i, valueString.str().c_str());
+                        item.c_str(), i, tempVString.str().c_str());
                 } else {
                     outputWriter.setNull(i);
                     debugLog(srvInterface,
