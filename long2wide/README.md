@@ -31,7 +31,7 @@ Wide-form data has one row per value of one of the first variable and one column
 ```
 LONG2WIDE (
     data_item, data_value
-    USING PARAMETERS item_list='comma-separated-items' )
+    USING PARAMETERS item_list='comma-separated-items' | item_range_max=max-value [, item_range_min=min-value] )
 OVER ( PARTITION BY expression[,…] )
 ```
 
@@ -45,6 +45,7 @@ OVER ( PARTITION BY expression[,…] )
 |Parameter name|Set to...|
 |--|--|
 |item_list|Comma-separated observations to be displayed as columns. Maximum length is 32,000,000.|
+|item_range_max, item_range_min|Maximum/minimum value of the range for observations. List of observations is generated using the range of item_range_min <= observation < item_range_max.|
 |PARTITION BY _expression_|Expression on which to divides the rows of the function input. Expression has to be the same as the expression specified before Long2Wide function in SELECT clause.|
 
 ### Examples
