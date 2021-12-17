@@ -53,7 +53,11 @@ class Long2Wide : public CursorTransformFunction
     int itemsSize = 0;              // size of array of item list values
     BaseDataOID argTypeOIDItemCol;  // data type of item_column
     BaseDataOID argTypeOIDValueCol; // data type of value_column
-    ParallelismInfo *pinfo;         // store for parallelism situation
+    int32
+        argTypeNumericPrecisionValueCol; // Precision of value_column in case of NUMERIC
+    int32
+        argTypeNumericScaleValueCol; // Scale of value_column in case of NUMERIC
+    ParallelismInfo *pinfo;          // store for parallelism situation
     vbool zeroIfNullFlag
         = vbool_false; // flag to show zero value instead of NULL
     vbool debugFlag;   // debug flag
@@ -137,8 +141,12 @@ public:
         case VarcharOID:
         case Int8OID:
         case Float8OID:
-        case NumericOID:
             break;
+        case NumericOID: {
+            argTypeNumericPrecisionValueCol
+                = argTypeValueCol.getNumericPrecision();
+            argTypeNumericScaleValueCol = argTypeValueCol.getNumericScale();
+        } break;
         default:
             vt_report_error(
                 0, "%s supports VARCHAR/CHAR/INTEGER/FLOAT/NUMERIC type but %s provided",
@@ -307,12 +315,20 @@ private:
         case NumericOID: {
             const VNumeric *tempNumeric = inputReader.getNumericPtr(idx);
             if (!tempNumeric->isNull()) {
-                VNumeric valueNumeric = *tempNumeric;
-                itemMap[item] = (void *)&valueNumeric;
+                char stringValue[64];
+                tempNumeric->toString(stringValue, 64);
+                size_t stringLength = sizeof(stringValue) / sizeof(char) + 1;
+                char *valueString = vt_allocArray(srvInterface.allocator, char,
+                                                  stringLength);
+                std::memset(valueString, '\0', stringLength);
+                for (vsize i = 0; i < stringLength - 1; ++i) {
+                    valueString[i] = stringValue[i];
+                }
+                itemMap[item] = (void *)valueString;
                 debugLog(
-                    srvInterface, "    Numeric value set to map[%s] is [%lf], value inside map is [%f]",
-                    item.c_str(), valueNumeric.toFloat(),
-                    (*((VNumeric *)itemMap[item])).toFloat());
+                    srvInterface, "    Numeric value set to map[%s] is [%lf], value inside map is [%s]",
+                    item.c_str(), tempNumeric->toFloat(),
+                    (char *)itemMap[item]);
             }
         } break;
         default:
@@ -395,7 +411,25 @@ private:
                 std::string item = items[i];
                 auto itr = itemMap.find(item);
                 if (itr != itemMap.end() && itr->second != nullptr) {
-                    VNumeric valueNumeric = *((VNumeric *)(itr->second));
+                    const char *tempString = (char *)(itr->second);
+                    size_t stringLength = std::strlen(tempString) + 1;
+                    char *valueString = vt_allocArray(srvInterface.allocator,
+                                                      char, stringLength);
+                    std::memset(valueString, '\0', stringLength);
+                    for (size_t j = 0; j < std::strlen(tempString); ++j) {
+                        valueString[j] = tempString[j];
+                    }
+
+                    uint64 word[4];
+                    VerticaType numericType(
+                        NumericOID, VerticaType::makeNumericTypeMod(
+                                        argTypeNumericPrecisionValueCol,
+                                        argTypeNumericScaleValueCol));
+                    VNumeric valueNumeric(&word[0],
+                                          numericType.getNumericPrecision(),
+                                          numericType.getNumericScale());
+                    VNumeric::charToNumeric(valueString, numericType,
+                                            valueNumeric);
                     outputWriter.getColRefForWrite<VNumeric>(i) = valueNumeric;
                     debugLog(
                         srvInterface,
