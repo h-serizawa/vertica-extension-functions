@@ -3,7 +3,7 @@
  *
  * Description: Long2Wide : Transform the long-form data into the wide-form data
  *
- * Create Date: September 14, 2021
+ * Create Date: December 17, 2021
  * Author: Hibiki Serizawa
  */
 #include "Vertica.h"
@@ -11,6 +11,7 @@
 #include <cstring>
 #include <iostream>
 #include <istream>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -21,7 +22,11 @@ using namespace Vertica;
 
 const std::string ITEM_LIST = "item_list"; // parameter name for item list
 const int ITEM_LIST_MAX_LEN
-    = 32000000;                    // maximum length for item_list parameter
+    = 32000000; // maximum length for item_list parameter
+const std::string ITEM_RANGE_MIN
+    = "item_range_min"; // parameter name for minimum value of item range
+const std::string ITEM_RANGE_MAX
+    = "item_range_max"; // parameter name for maximum value of item range
 const std::string DEBUG = "debug"; // parameter name for debug flag
 
 const std::string ITEM_COLUMN = "item_column"; // argument name for item column
@@ -70,9 +75,22 @@ public:
             itemList = paramReader.getStringRef(ITEM_LIST).str();
             debugLog(srvInterface, "  Parameter value of item_list is [%s]",
                      itemList.c_str());
-            if (itemsSize == 0) {
-                separateListToItems(srvInterface);
+        }
+        // Get item_range_max and min parameter values and generate item list.
+        else if (paramReader.containsParameter(ITEM_RANGE_MAX)) {
+            int maxValue = paramReader.getIntRef(ITEM_RANGE_MAX);
+            int minValue = 0;
+            if (paramReader.containsParameter(ITEM_RANGE_MIN)) {
+                minValue = paramReader.getIntRef(ITEM_RANGE_MIN);
             }
+            debugLog(
+                srvInterface, "  Parameter value of item_range_max is [%d], item_range_min is [%d]",
+                maxValue, minValue);
+            itemList = generateItemListFromRange(minValue, maxValue);
+            debugLog(srvInterface, "  Generated item_list is [%s]", itemList);
+        }
+        if (itemsSize == 0) {
+            separateListToItems(srvInterface);
         }
 
         // Get data type of 2 arguments and store them to instance variables.
@@ -451,13 +469,32 @@ private:
     makeItemMap()
     {
         std::unordered_map<std::string, void *> itemMap;
-        for (int i = 0; i < itemsSize; i++) {
+        for (int i = 0; i < itemsSize; ++i) {
             std::string item = items[i];
             if (item.size() != 0) {
                 itemMap[item] = nullptr;
             }
         }
         return itemMap;
+    }
+
+    /*
+     * Generate comma-separated item list using range values.
+     */
+    std::string
+    generateItemListFromRange(int minValue, int maxValue)
+    {
+        std::vector<int> itemList(maxValue - minValue);
+        std::iota(itemList.begin(), itemList.end(), minValue);
+        std::ostringstream stream;
+        for (size_t i = 0; i < itemList.size(); ++i) {
+            if (i) {
+                stream << ',';
+            }
+            stream << itemList[i];
+        }
+        std::string itemListStr = stream.str();
+        return itemListStr;
     }
 
     /*
@@ -512,16 +549,34 @@ public:
                                 ? std::to_string(argCols.size()).c_str()
                                 : "none");
         }
+        const VerticaType type = inputTypes.getColumnType(argCols[1]);
 
         // Register output columns using item list.
         ParamReader paramReader = srvInterface.getParamReader();
         if (paramReader.containsParameter(ITEM_LIST)) {
-            const VerticaType type = inputTypes.getColumnType(argCols[1]);
             std::string itemList = paramReader.getStringRef(ITEM_LIST).str();
             std::vector<std::string> items = getItemList(itemList);
             for (std::string item : items) {
                 outputTypes.addArg(type, item);
             }
+        } else if (paramReader.containsParameter(ITEM_RANGE_MAX)) {
+            int maxValue = paramReader.getIntRef(ITEM_RANGE_MAX);
+            int minValue = 0;
+            if (paramReader.containsParameter(ITEM_RANGE_MIN)) {
+                minValue = paramReader.getIntRef(ITEM_RANGE_MIN);
+            }
+            if (minValue >= maxValue) {
+                vt_report_error(
+                    0, "%s parameter value has to be greater than %s parameter value",
+                    ITEM_RANGE_MAX, ITEM_RANGE_MIN);
+            }
+            for (int i = minValue; i < maxValue; ++i) {
+                outputTypes.addArg(type, std::to_string(i));
+            }
+        } else {
+            vt_report_error(0,
+                            "%s parameter or %s parameter has to be provided",
+                            ITEM_LIST, ITEM_RANGE_MAX);
         }
     }
 
@@ -537,10 +592,28 @@ public:
         {
             parameterTypes.addLongVarchar(
                 ITEM_LIST_MAX_LEN, ITEM_LIST,
-                Properties(true /* visible */, true /* required */,
+                Properties(true /* visible */, false /* required */,
                            false /* canBeNull */,
                            "Comma separated value to use to make new columns",
                            false /* isSortedOnThis */));
+        }
+        // Define item_range_min parameter.
+        {
+            parameterTypes.addInt(
+                ITEM_RANGE_MIN,
+                Properties(
+                    true /* visible */, false /* required */,
+                    false /* canBeNull */, "Minimum value for range of sequence number to make new columns",
+                    false /* isSortedOnThis */));
+        }
+        // Define item_range_max parameter.
+        {
+            parameterTypes.addInt(
+                ITEM_RANGE_MAX,
+                Properties(
+                    true /* visible */, false /* required */,
+                    false /* canBeNull */, "Maximum value for range of sequence number to make new columns",
+                    false /* isSortedOnThis */));
         }
         // Define debug parameter
         {
