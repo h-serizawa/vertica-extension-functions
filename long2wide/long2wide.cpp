@@ -27,6 +27,8 @@ const std::string ITEM_RANGE_MIN
     = "item_range_min"; // parameter name for minimum value of item range
 const std::string ITEM_RANGE_MAX
     = "item_range_max"; // parameter name for maximum value of item range
+const std::string ZERO_IF_NULL
+    = "zero_if_null"; // parameter name for flag to show zero value instead of NULL
 const std::string DEBUG = "debug"; // parameter name for debug flag
 
 const std::string ITEM_COLUMN = "item_column"; // argument name for item column
@@ -52,7 +54,9 @@ class Long2Wide : public CursorTransformFunction
     BaseDataOID argTypeOIDItemCol;  // data type of item_column
     BaseDataOID argTypeOIDValueCol; // data type of value_column
     ParallelismInfo *pinfo;         // store for parallelism situation
-    vbool debugFlag;                // debug flag
+    vbool zeroIfNullFlag
+        = vbool_false; // flag to show zero value instead of NULL
+    vbool debugFlag;   // debug flag
 
 public:
     /**
@@ -91,6 +95,13 @@ public:
         }
         if (itemsSize == 0) {
             separateListToItems(srvInterface);
+        }
+
+        // Get zero_if_null parameter value and store it to instance variable.
+        if (paramReader.containsParameter(ZERO_IF_NULL)) {
+            zeroIfNullFlag = paramReader.getBoolRef(ZERO_IF_NULL);
+            debugLog(srvInterface, "  Parameter value of zero_if_null is [%s]",
+                     zeroIfNullFlag);
         }
 
         // Get data type of 2 arguments and store them to instance variables.
@@ -343,10 +354,7 @@ private:
                         "  String value set to output[%s(index=%d)] is [%s]",
                         item.c_str(), i, tempVString.str().c_str());
                 } else {
-                    outputWriter.setNull(i);
-                    debugLog(srvInterface,
-                             "  Null value is set to output[%s(index=%d)]",
-                             item.c_str(), i);
+                    setNullToOutput(srvInterface, outputWriter, i, item);
                 }
             }
         } break;
@@ -362,10 +370,7 @@ private:
                         "  Integer value set to output[%s(index=%d)] is [%d]",
                         item.c_str(), i, valueInt);
                 } else {
-                    outputWriter.setNull(i);
-                    debugLog(srvInterface,
-                             "  Null value is set to output[%s(index=%d)]",
-                             item.c_str(), i);
+                    setNullToOutput(srvInterface, outputWriter, i, item);
                 }
             }
         } break;
@@ -381,10 +386,7 @@ private:
                         "  Float value set to output[%s(index=%d)] is [%f]",
                         item.c_str(), i, valueFloat);
                 } else {
-                    outputWriter.setNull(i);
-                    debugLog(srvInterface,
-                             "  Null value is set to output[%s(index=%d)]",
-                             item.c_str(), i);
+                    setNullToOutput(srvInterface, outputWriter, i, item);
                 }
             }
         } break;
@@ -400,15 +402,71 @@ private:
                         "  Numeric value set to output[%s(index=%d)] is [%lf]",
                         item.c_str(), i, valueNumeric.toFloat());
                 } else {
-                    outputWriter.setNull(i);
-                    debugLog(srvInterface,
-                             "  Null value is set to output[%s(index=%d)]",
-                             item.c_str(), i);
+                    setNullToOutput(srvInterface, outputWriter, i, item);
                 }
             }
         } break;
         default:
             break;
+        }
+    }
+
+    /**
+     * Set Null or Zero value to output.
+     */
+    void
+    setNullToOutput(ServerInterface &srvInterface,
+                    PartitionWriter &outputWriter, size_t idx,
+                    std::string &itemName)
+    {
+        if (zeroIfNullFlag == vbool_true) {
+            switch (argTypeOIDValueCol) {
+            case CharOID:
+            case VarcharOID: {
+                InlineStringValue<65000> buf;
+                VString tempVString(&buf);
+                char valueString[] = "0";
+                tempVString.alloc(2);
+                tempVString.copy(valueString, 2);
+                outputWriter.getColRefForWrite<VString>(idx) = tempVString;
+                debugLog(
+                    srvInterface,
+                    "  Zero value set to output[%s(index=%d)] that is [%s]",
+                    itemName.c_str(), idx, tempVString.str().c_str());
+            } break;
+            case Int8OID: {
+                outputWriter.setInt(idx, 0);
+                debugLog(srvInterface,
+                         "  Zero value set to output[%s(index=%d)]",
+                         itemName.c_str(), idx);
+            } break;
+            case Float8OID: {
+                outputWriter.setFloat(idx, 0);
+                debugLog(srvInterface,
+                         "  Zero value set to output[%s(index=%d)]",
+                         itemName.c_str(), idx);
+            } break;
+            case NumericOID: {
+                uint64 word[4];
+                VerticaType numericType(NumericOID,
+                                        VerticaType::makeNumericTypeMod(2, 1));
+                VNumeric zeroValue(&word[0], numericType.getNumericPrecision(),
+                                   numericType.getNumericScale());
+                VNumeric::charToNumeric("0.0", numericType, zeroValue);
+                outputWriter.getColRefForWrite<VNumeric>(idx) = zeroValue;
+                debugLog(
+                    srvInterface,
+                    "  Zero value set to output[%s(index=%d)] that is [%lf]",
+                    itemName.c_str(), idx, zeroValue.toFloat());
+            } break;
+            default:
+                break;
+            }
+        } else {
+            outputWriter.setNull(idx);
+            debugLog(srvInterface,
+                     "  Null value is set to output[%s(index=%d)]",
+                     itemName.c_str(), idx);
         }
     }
 
@@ -614,6 +672,15 @@ public:
                     true /* visible */, false /* required */,
                     false /* canBeNull */, "Maximum value for range of sequence number to make new columns",
                     false /* isSortedOnThis */));
+        }
+        // Define zero_if_null parameter
+        {
+            parameterTypes.addBool(
+                ZERO_IF_NULL,
+                Properties(true /* visible */, false /* required */,
+                           false /* canBeNull */,
+                           "Flag to show zero value instead of NULL",
+                           false /* isSortedOnThis */));
         }
         // Define debug parameter
         {
