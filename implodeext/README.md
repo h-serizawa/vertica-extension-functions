@@ -27,6 +27,30 @@ OVER ( PARTITION BY expression[,…] )
 |allow_truncate|Boolean, if it is true, it truncates results when output elements exceeds maximum number of elements. If it is false, the function returns an error if the output array is too large. Default is false.|
 |PARTITION BY _expression_|Expression on which to divides the rows of the function input. Expression has to be the same as the expression specified before ImplodeExt function in SELECT clause.|
 
+### Examples
+
+```
+=> SELECT * FROM public.statuses ORDER BY equipment_id;
+
+ equipment_id |                  status
+--------------+------------------------------------------
+     18498209 | {"part1":1265,"part2":1716,"part3":1403}
+     18498209 | {"part1":1279,"part2":1820,"part3":1426}
+     18498209 | {"part1":1271,"part2":1802,"part3":1412}
+     21848523 | {"part1":1329,"part2":1808,"part3":1487}
+     21848523 | {"part1":1303,"part2":1811,"part3":1500}
+     21848523 | {"part1":1314,"part2":1841,"part3":1490}
+(6 rows)
+
+=> SELECT equipment_id, implodeext(status) OVER (PARTITION BY equipment_id) AS status FROM public.statuses ORDER BY equipment_id;
+
+ equipment_id |                                                            status
+--------------+------------------------------------------------------------------------------------------------------------------------------
+     18498209 | [{"part1":1265,"part2":1716,"part3":1403},{"part1":1279,"part2":1820,"part3":1426},{"part1":1271,"part2":1802,"part3":1412}]
+     21848523 | [{"part1":1329,"part2":1808,"part3":1487},{"part1":1303,"part2":1811,"part3":1500},{"part1":1314,"part2":1841,"part3":1490}]
+(2 rows)
+```
+
 ### Installation
 
 Set up your environment to meet C++ Requirements described on the following page.
