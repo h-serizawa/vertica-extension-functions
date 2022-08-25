@@ -23,7 +23,7 @@ OVER ( PARTITION BY expression[,…] )
 ### Parameters
 |Parameter name|Set to...|
 |--|--|
-|max_elements|Maximum number of output elements. Default is 256.|
+|max_elements|Maximum number of output elements. Default is 256.<br/>Even if this parameter is set to huge value, the function returns an error if the output array exceeds 32MB that is the system limit of length of variable-length column.|
 |allow_truncate|Boolean, if it is true, it truncates results when output elements exceeds maximum number of elements. If it is false, the function returns an error if the output array is too large. Default is false.|
 |PARTITION BY _expression_|Expression on which to divides the rows of the function input. Expression has to be the same as the expression specified before ImplodeExt function in SELECT clause.|
 
