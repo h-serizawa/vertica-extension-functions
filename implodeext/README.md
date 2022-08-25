@@ -11,7 +11,7 @@ Original Implode function has been introduced in Vertica 10.1.0. It accepts only
 ```
 IMPLODEEXT (
     input_column
-    USING PARAMETERS { max_elements=max-value | allow_truncate=bool_flag] )
+    [ USING PARAMETERS { max_elements=max-value | allow_truncate=bool_flag } ] )
 OVER ( PARTITION BY expression[,…] )
 ```
 
