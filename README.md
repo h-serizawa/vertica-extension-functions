@@ -14,4 +14,8 @@ All codes are provided under the license found in LICENSE file.
 
     Transforms Long-form data to Wide-form data like PIVOT feature.
 
+- ImplodeExt function
+
+    Assembles data into array grouped by keys. It can support ARRAY and ROW complex type.
+
 Enjoy your life with Vertica!!
