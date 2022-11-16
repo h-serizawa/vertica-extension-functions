@@ -18,4 +18,8 @@ All codes are provided under the license found in LICENSE file.
 
     Assembles data into array grouped by keys. It can support ARRAY and ROW complex type.
 
+- MallocInfo function
+
+    Logs the output of malloc_info() system call on initiator node.
+
 Enjoy your life with Vertica!!
