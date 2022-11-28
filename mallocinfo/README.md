@@ -9,14 +9,22 @@ This function is used as the debug purpose. Vertica triggers malloc_trim() syste
 ### Syntax
 
 ```
-MALLOCINFO ()
+MALLOCINFO ( { ['output_filename'] | null } )
 ```
 
 ### Examples
 
+1. Store the output of malloc_info() into UDX_EVENTS system table
+
 ```
-=> SELECT mallocinfo();
+=> SELECT mallocinfo(null);
 => SELECT __RAW__['mallocinfo'] FROM udx_events WHERE session_id = current_session();
+```
+
+2. Store the output of malloc_info() into a file
+
+```
+=> SELECT mallocinfo('/tmp/mallocinfo.txt');
 ```
 
 ### Installation
