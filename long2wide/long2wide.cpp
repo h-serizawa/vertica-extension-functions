@@ -177,7 +177,7 @@ public:
         if (debugFlag == vbool_true) {
             std::stringstream ss;
             ss << std::this_thread::get_id();
-            debugLog(srvInterface, "  Thread ID is [%lu]", ss.str().c_str());
+            debugLog(srvInterface, "  Thread ID is [%s]", ss.str().c_str());
         }
 
         try {
@@ -216,6 +216,7 @@ public:
             // Generate output from the item map.
             setItemValueToOutput(srvInterface, outputWriter, itemMap);
             outputWriter.next();
+
             itemMap.clear();
         } catch (std::exception &e) {
             vt_report_error(0, "Exception while processing partition: [%s]",
@@ -353,22 +354,12 @@ private:
                 if (itr != itemMap.end() && itr->second != nullptr) {
                     const char *tempString = (char *)(itr->second);
                     size_t stringLength = std::strlen(tempString) + 1;
-                    char *valueString = vt_allocArray(srvInterface.allocator,
-                                                      char, stringLength);
-                    std::memset(valueString, '\0', stringLength);
-                    for (size_t j = 0; j < std::strlen(tempString); ++j) {
-                        valueString[j] = tempString[j];
-                    }
-
-                    InlineStringValue<65000> buf;
-                    VString tempVString(&buf);
-                    tempVString.alloc(stringLength);
-                    tempVString.copy(valueString, stringLength);
-                    outputWriter.getColRefForWrite<VString>(i) = tempVString;
+                    VString &strRef = outputWriter.getStringRef(i);
+                    strRef.copy(tempString, stringLength);
                     debugLog(
                         srvInterface,
                         "  String value set to output[%s(index=%d)] is [%s]",
-                        item.c_str(), i, tempVString.str().c_str());
+                        item.c_str(), i, strRef.str().c_str());
                 } else {
                     setNullToOutput(srvInterface, outputWriter, i, item);
                 }
@@ -561,6 +552,7 @@ private:
     makeItemMap()
     {
         std::unordered_map<std::string, void *> itemMap;
+        itemMap.rehash(itemsSize);
         for (int i = 0; i < itemsSize; ++i) {
             std::string item = items[i];
             if (item.size() != 0) {
@@ -609,6 +601,8 @@ private:
  */
 class Long2WideFactory : public CursorTransformFunctionFactory
 {
+    int itemsSize = 0; // size of array of item list values
+
 public:
     /**
      * Define arguments and outputs.
@@ -648,9 +642,11 @@ public:
         if (paramReader.containsParameter(ITEM_LIST)) {
             std::string itemList = paramReader.getStringRef(ITEM_LIST).str();
             std::vector<std::string> items = getItemList(itemList);
+            itemsSize = items.size();
             for (std::string item : items) {
                 outputTypes.addArg(type, item);
             }
+            items.clear();
         } else if (paramReader.containsParameter(ITEM_RANGE_MAX)) {
             int maxValue = paramReader.getIntRef(ITEM_RANGE_MAX);
             int minValue = 0;
@@ -726,13 +722,28 @@ public:
     }
 
     /**
+     * Inform Vertica estimated memory allocation.
+     */
+    void
+    getPerInstanceResources(ServerInterface &srvInterface, VResources &res,
+                            const SizedColumnTypes &inputTypes)
+    {
+        res.scratchMemory
+            += inputTypes.getColumnType(0).getMaxSize() * itemsSize  // for item_column to be the column name
+            +  inputTypes.getColumnType(1).getMaxSize() * itemsSize  // for value_column to be the column value
+            +  (itemsSize * (sizeof(std::pair<std::string, void *>) + sizeof(void *))       // unordered_map: data list
+                + itemsSize * 1.01 /* bucket_count() */ * (sizeof(void *) + sizeof(size_t))) // unordered_map: bucket index
+            + sizeof(Long2Wide);
+        res.scratchMemory *= 1.5; // estimated allocation overheads
+    }
+
+    /**
      * Define the concurrency.
      */
     void
-    getConcurrencyModel(ServerInterface &srvInterface,
-                        ConcurrencyModel &concModel)
+    getConcurrencyModel(ServerInterface &srvInterface, ConcurrencyModel &concModel)
     {
-        concModel.nThreads = -1;
+        concModel.nThreads = 1;
         concModel.localConc
             = ConcurrencyModel::LocalConcurrencyType::LC_CONTEXTUAL;
         concModel.globalConc
