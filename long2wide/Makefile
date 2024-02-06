@@ -1,23 +1,31 @@
 #
-# Copyright (c) 2021 Hibiki Serizawa
+# Copyright (c) 2024 Hibiki Serizawa
 #
 # Description: Makefile to build long2wide function
 #
-# Create Date: September 14, 2021
+# Create Date: February 2, 2024
 # Author: Hibiki Serizawa
 #
 CXX = g++
-CXXFLAGS = -I /opt/vertica/sdk/include -Wall -shared -Wno-unused-value -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0 -g -Og
+CXXFLAGS = -I /opt/vertica/sdk/include -Wall -shared -Wno-unused-value -std=c++11 -g -Og
 LDFLAGS = -fPIC
 LBLIBS =
+VSQL = /opt/vertica/bin/vsql
 
-SRC = long2wide.cpp
-OBJ = $(SRC:.cpp=.so)
+.PHONEY: long2wide.so install uninstall test clean
+all: long2wide.so
 
-all: $(OBJ)
+long2wide.so: long2wide.cpp /opt/vertica/sdk/include/Vertica.cpp /opt/vertica/sdk/include/BuildInfo.h
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LBLIBS)
 
-$(OBJ): $(SRC)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ /opt/vertica/sdk/include/Vertica.cpp $(LBLIBS)
+install: long2wide.so
+	$(VSQL) -f ./install.sql
+
+uninstall:
+	$(VSQL) -f ./uninstall.sql
+
+test: install
+	$(VSQL) -f ./sqltest/long2wide_test.sql > ./sqltest/long2wide_test.out
 
 clean:
-	rm -f $(OBJ)
+	rm -f long2wide.so ./sqltest/long2wide_test.out

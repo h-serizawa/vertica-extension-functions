@@ -1,13 +1,27 @@
 /**
- * Copyright (c) 2021 Hibiki Serizawa
+ * Copyright (c) 2024 Hibiki Serizawa
  *
  * Description: Long2Wide : Transform the long-form data into the wide-form data
  *
- * Create Date: December 17, 2021
+ * Create Date: February 2, 2024
  * Author: Hibiki Serizawa
  */
 #include "Vertica.h"
+#include "BuildInfo.h"
 #include "EEUDxShared.h"
+
+// Vertica version check
+// If less than 24, set not to use C++11 ABI, if not, set to use it
+#ifndef VERTICA_BUILD_ID_SDK_Version_Major
+    #error "It requires Vertica version to compile this UDx."
+#else
+    #if VERTICA_BUILD_ID_SDK_Version_Major < 24
+        #define _GLIBCXX_USE_CXX11_ABI 0
+    #else
+        #define _GLIBCXX_USE_CXX11_ABI 1
+    #endif
+#endif
+
 #include <cstring>
 #include <iostream>
 #include <istream>
@@ -20,20 +34,15 @@
 
 using namespace Vertica;
 
-const std::string ITEM_LIST = "item_list"; // parameter name for item list
-const int ITEM_LIST_MAX_LEN
-    = 32000000; // maximum length for item_list parameter
-const std::string ITEM_RANGE_MIN
-    = "item_range_min"; // parameter name for minimum value of item range
-const std::string ITEM_RANGE_MAX
-    = "item_range_max"; // parameter name for maximum value of item range
-const std::string ZERO_IF_NULL
-    = "zero_if_null"; // parameter name for flag to show zero value instead of NULL
-const std::string DEBUG = "debug"; // parameter name for debug flag
+const std::string ITEM_LIST      = "item_list";      // parameter name for item list
+const int ITEM_LIST_MAX_LEN      = 32000000;         // maximum length for item_list parameter
+const std::string ITEM_RANGE_MIN = "item_range_min"; // parameter name for minimum value of item range
+const std::string ITEM_RANGE_MAX = "item_range_max"; // parameter name for maximum value of item range
+const std::string ZERO_IF_NULL   = "zero_if_null";   // parameter name for flag to show zero value instead of NULL
+const std::string DEBUG          = "debug";          // parameter name for debug flag
 
-const std::string ITEM_COLUMN = "item_column"; // argument name for item column
-const std::string VALUE_COLUMN
-    = "value_column"; // argument name for value column
+const std::string ITEM_COLUMN  = "item_column";  // argument name for item column
+const std::string VALUE_COLUMN = "value_column"; // argument name for value column
 
 /**
  * Represent a string value using EE::StringValue to initialize VString
@@ -48,19 +57,16 @@ template<size_t maxlen> struct InlineStringValue : public EE::StringValue {
  */
 class Long2Wide : public CursorTransformFunction
 {
-    std::string itemList;           // item_list parameter value
-    std::vector<std::string> items; // array of item list values
-    int itemsSize = 0;              // size of array of item list values
-    BaseDataOID argTypeOIDItemCol;  // data type of item_column
-    BaseDataOID argTypeOIDValueCol; // data type of value_column
-    int32
-        argTypeNumericPrecisionValueCol; // Precision of value_column in case of NUMERIC
-    int32
-        argTypeNumericScaleValueCol; // Scale of value_column in case of NUMERIC
-    ParallelismInfo *pinfo;          // store for parallelism situation
-    vbool zeroIfNullFlag
-        = vbool_false; // flag to show zero value instead of NULL
-    vbool debugFlag;   // debug flag
+    std::string itemList;                  // item_list parameter value
+    std::vector<std::string> items;        // array of item list values
+    int itemsSize = 0;                     // size of array of item list values
+    BaseDataOID argTypeOIDItemCol;         // data type of item_column
+    BaseDataOID argTypeOIDValueCol;        // data type of value_column
+    int32 argTypeNumericPrecisionValueCol; // Precision of value_column in case of NUMERIC
+    int32 argTypeNumericScaleValueCol;     // Scale of value_column in case of NUMERIC
+    ParallelismInfo *pinfo;                // store for parallelism situation
+    vbool zeroIfNullFlag = vbool_false;    // flag to show zero value instead of NULL
+    vbool debugFlag;                       // debug flag
 
 public:
     /**
@@ -81,8 +87,7 @@ public:
         // Get item_list parameter value and store it to instance variable.
         if (paramReader.containsParameter(ITEM_LIST)) {
             itemList = paramReader.getStringRef(ITEM_LIST).str();
-            debugLog(srvInterface, "  Parameter value of item_list is [%s]",
-                     itemList.c_str());
+            debugLog(srvInterface, "  Parameter value of item_list is [%s]", itemList.c_str());
         }
         // Get item_range_max and min parameter values and generate item list.
         else if (paramReader.containsParameter(ITEM_RANGE_MAX)) {
@@ -92,8 +97,7 @@ public:
                 minValue = paramReader.getIntRef(ITEM_RANGE_MIN);
             }
             debugLog(
-                srvInterface, "  Parameter value of item_range_max is [%d], item_range_min is [%d]",
-                maxValue, minValue);
+                srvInterface, "  Parameter value of item_range_max is [%d], item_range_min is [%d]", maxValue, minValue);
             itemList = generateItemListFromRange(minValue, maxValue);
             debugLog(srvInterface, "  Generated item_list is [%s]", itemList);
         }
@@ -104,8 +108,7 @@ public:
         // Get zero_if_null parameter value and store it to instance variable.
         if (paramReader.containsParameter(ZERO_IF_NULL)) {
             zeroIfNullFlag = paramReader.getBoolRef(ZERO_IF_NULL);
-            debugLog(srvInterface, "  Parameter value of zero_if_null is [%s]",
-                     zeroIfNullFlag);
+            debugLog(srvInterface, "  Parameter value of zero_if_null is [%s]", zeroIfNullFlag);
         }
 
         // Get data type of 2 arguments and store them to instance variables.
@@ -143,8 +146,7 @@ public:
         case Float8OID:
             break;
         case NumericOID: {
-            argTypeNumericPrecisionValueCol
-                = argTypeValueCol.getNumericPrecision();
+            argTypeNumericPrecisionValueCol = argTypeValueCol.getNumericPrecision();
             argTypeNumericScaleValueCol = argTypeValueCol.getNumericScale();
         } break;
         default:
@@ -162,8 +164,7 @@ public:
                        ParallelismInfo *parallel)
     {
         pinfo = parallel;
-        debugLog(srvInterface, "  Number of peers is [%d]",
-                 parallel->getNumPeers());
+        debugLog(srvInterface, "  Number of peers is [%d]", parallel->getNumPeers());
     }
 
     /**
@@ -194,16 +195,14 @@ public:
                 }
                 // Read item_column value.
                 std::string item = getArgumentRefAsString(inputReader, 0);
-                debugLog(srvInterface, "  Item value read from input is [%s]",
-                         item.c_str());
+                debugLog(srvInterface, "  Item value read from input is [%s]", item.c_str());
                 // If item_column value is null, nothing is done.
                 if (item.length() != 0) {
                     // If item_column value is not listed in item list, nothing is done.
                     auto itr = itemMap.find(item);
                     if (itr != itemMap.end()) {
                         // Set value_column value to item map.
-                        setInputToItems(srvInterface, inputReader, 1, itemMap,
-                                        item);
+                        setInputToItems(srvInterface, inputReader, 1, itemMap, item);
                     }
                 }
                 lastNxt = inputReader.next();
@@ -219,8 +218,7 @@ public:
 
             itemMap.clear();
         } catch (std::exception &e) {
-            vt_report_error(0, "Exception while processing partition: [%s]",
-                            e.what());
+            vt_report_error(0, "Exception while processing partition: [%s]", e.what());
         }
     }
 
@@ -278,14 +276,15 @@ private:
             const VString *tempString = inputReader.getStringPtr(idx);
             if (!tempString->isNull()) {
                 size_t stringLength = tempString->length() + 1;
-                char *valueString = vt_allocArray(srvInterface.allocator, char,
-                                                  stringLength);
+                debugLog(srvInterface, "    Length of String value is [%ld], handling as [%ld]", tempString->length(), stringLength);
+                char *valueString = vt_allocArray(srvInterface.allocator, char, stringLength);
                 std::memset(valueString, '\0', stringLength);
                 const char *tempStringChar = tempString->str().c_str();
                 for (vsize i = 0; i < tempString->length(); ++i) {
                     valueString[i] = tempStringChar[i];
                 }
                 itemMap[item] = (void *)valueString;
+                debugLog(srvInterface, "    Length of String value inside map is [%ld]", strlen((char *)itemMap[item]));
                 debugLog(
                     srvInterface, "    String value set to map[%s] is [%s], value inside map is [%s]",
                     item.c_str(), tempString->str().c_str(),
@@ -304,8 +303,7 @@ private:
         } break;
         case Float8OID: {
             vfloat *valueFloat = vt_alloc(srvInterface.allocator, vfloat);
-            std::memcpy(valueFloat, inputReader.getFloatPtr(idx),
-                        sizeof(vfloat));
+            std::memcpy(valueFloat, inputReader.getFloatPtr(idx), sizeof(vfloat));
             if (!vfloatIsNull(*valueFloat)) {
                 itemMap[item] = (void *)valueFloat;
                 debugLog(
@@ -319,8 +317,7 @@ private:
                 char stringValue[64];
                 tempNumeric->toString(stringValue, 64);
                 size_t stringLength = sizeof(stringValue) / sizeof(char) + 1;
-                char *valueString = vt_allocArray(srvInterface.allocator, char,
-                                                  stringLength);
+                char *valueString = vt_allocArray(srvInterface.allocator, char, stringLength);
                 std::memset(valueString, '\0', stringLength);
                 for (vsize i = 0; i < stringLength - 1; ++i) {
                     valueString[i] = stringValue[i];
@@ -353,7 +350,8 @@ private:
                 auto itr = itemMap.find(item);
                 if (itr != itemMap.end() && itr->second != nullptr) {
                     const char *tempString = (char *)(itr->second);
-                    size_t stringLength = std::strlen(tempString) + 1;
+                    size_t stringLength = std::strlen(tempString);
+                    debugLog(srvInterface, "  Length of String value is [%ld], handling as [%ld]", strlen(tempString), stringLength);
                     VString &strRef = outputWriter.getStringRef(i);
                     strRef.copy(tempString, stringLength);
                     debugLog(
@@ -404,8 +402,7 @@ private:
                 if (itr != itemMap.end() && itr->second != nullptr) {
                     const char *tempString = (char *)(itr->second);
                     size_t stringLength = std::strlen(tempString) + 1;
-                    char *valueString = vt_allocArray(srvInterface.allocator,
-                                                      char, stringLength);
+                    char *valueString = vt_allocArray(srvInterface.allocator, char, stringLength);
                     std::memset(valueString, '\0', stringLength);
                     for (size_t j = 0; j < std::strlen(tempString); ++j) {
                         valueString[j] = tempString[j];
@@ -473,8 +470,7 @@ private:
             } break;
             case NumericOID: {
                 uint64 word[4];
-                VerticaType numericType(NumericOID,
-                                        VerticaType::makeNumericTypeMod(2, 1));
+                VerticaType numericType(NumericOID, VerticaType::makeNumericTypeMod(2, 1));
                 VNumeric zeroValue(&word[0], numericType.getNumericPrecision(),
                                    numericType.getNumericScale());
                 VNumeric::charToNumeric("0.0", numericType, zeroValue);
@@ -523,8 +519,7 @@ private:
             if (debugFlag == vbool_true) {
                 debugLog(srvInterface, "  Number of items is [%d]", itemsSize);
                 for (int i = 0; i < itemsSize; i++) {
-                    debugLog(srvInterface, "    items[%d] is [%s]", i,
-                             items[i].c_str());
+                    debugLog(srvInterface, "    items[%d] is [%s]", i, items[i].c_str());
                 }
             }
         }
@@ -744,17 +739,14 @@ public:
     getConcurrencyModel(ServerInterface &srvInterface, ConcurrencyModel &concModel)
     {
         concModel.nThreads = 1;
-        concModel.localConc
-            = ConcurrencyModel::LocalConcurrencyType::LC_CONTEXTUAL;
-        concModel.globalConc
-            = ConcurrencyModel::GlobalConcurrencyType::GC_CONTEXTUAL;
+        concModel.localConc = ConcurrencyModel::LocalConcurrencyType::LC_CONTEXTUAL;
+        concModel.globalConc = ConcurrencyModel::GlobalConcurrencyType::GC_CONTEXTUAL;
     }
 
     CursorTransformFunction *
     createTransformFunction(ServerInterface &srvInterface)
     {
-        CursorTransformFunction *tf
-            = vt_createFuncObject<Long2Wide>(srvInterface.allocator);
+        CursorTransformFunction *tf = vt_createFuncObject<Long2Wide>(srvInterface.allocator);
         tf->runProcessPartitionIfEmpty = false;
         return tf;
     }
