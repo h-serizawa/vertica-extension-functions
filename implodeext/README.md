@@ -4,7 +4,7 @@
 
 Assembles data into array grouped by keys.
 
-Original Implode function has been introduced in Vertica 10.1.0. It accepts only scalar data type as of 12.0. ImplodeExt extends original Implode function to support ARRAY and ROW complex type.
+Original Implode function has been introduced in Vertica 10.1.0. It accepts only scalar data type as of 24.1. ImplodeExt extends original Implode function to support ARRAY and ROW complex type.
 
 ### Syntax
 
@@ -56,19 +56,36 @@ OVER ( PARTITION BY expression[,…] )
 Set up your environment to meet C++ Requirements described on the following page.
 https://www.vertica.com/docs/latest/HTML/Content/Authoring/ExtendingVertica/UDx/DevEnvironment.htm
 
-To compile the source codes, run the following command:
+To compile the source codes in 24.1 or later version, run the following command:
 
 ```
 $ make
 ```
 
-To install ImplodeExt function, run the following statement in vsql:
+In 23.4 or previous version, run the following command:
 
 ```
-=> CREATE LIBRARY implodeextlib AS '<your path>/implodeext.so' LANGUAGE 'C++';
-=> CREATE TRANSFORM FUNCTION implodeext AS LANGUAGE 'C++' NAME 'ImplodeExtFactory' LIBRARY implodeextlib [NOT] FENCED;
+$ CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0 make
+```
+
+To install ImplodeExt function, run the following command:
+
+```
+$ make install
+```
+
+To uninstall ImplodeExt function, run the following command:
+
+```
+$ make uninstall
+```
+
+To test ImplodeExt function, run the following command. Output file is ./sqltest/implodeext_test.out:
+
+```
+$ make test
 ```
 
 ### Notes
 
-ImplodeExt function has been tested in Vertica 11.1.1.
+ImplodeExt function has been tested in Vertica 23.4 and 24.1.

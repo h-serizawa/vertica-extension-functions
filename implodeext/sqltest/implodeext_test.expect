@@ -1,0 +1,61 @@
+CREATE TABLE
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+COMMIT
+ key |                                                                                                                                                                                                                                                                    values                                                                                                                                                                                                                                                                    
+-----+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   1 | [{"field1":"value1_2","field2":2001,"field3":"2.10"},{"field1":"value1_1","field2":1001,"field3":"1.10"},{"field1":"value1_5","field2":5001,"field3":"5.10"},{"field1":"value1_4","field2":4001,"field3":"4.10"},{"field1":"value1_3","field2":3001,"field3":"3.10"},{"field1":"value1_10","field2":10001,"field3":"10.10"},{"field1":"value1_9","field2":9001,"field3":"9.10"},{"field1":"value1_8","field2":8001,"field3":"8.10"},{"field1":"value1_7","field2":7001,"field3":"7.10"},{"field1":"value1_6","field2":6001,"field3":"6.10"}]
+   2 | [{"field1":"value2_5","field2":5002,"field3":"5.20"},{"field1":"value2_4","field2":4002,"field3":"4.20"},{"field1":"value2_3","field2":3002,"field3":"3.20"},{"field1":"value2_2","field2":2002,"field3":"2.20"},{"field1":"value2_1","field2":1002,"field3":"1.20"},{"field1":"value2_10","field2":10002,"field3":"10.20"},{"field1":"value2_9","field2":9002,"field3":"9.20"},{"field1":"value2_8","field2":8002,"field3":"8.20"},{"field1":"value2_7","field2":7002,"field3":"7.20"},{"field1":"value2_6","field2":6002,"field3":"6.20"}]
+   3 | [{"field1":"value3_5","field2":5003,"field3":"5.30"},{"field1":"value3_4","field2":4003,"field3":"4.30"},{"field1":"value3_3","field2":3003,"field3":"3.30"},{"field1":"value3_2","field2":2003,"field3":"2.30"},{"field1":"value3_1","field2":1003,"field3":"1.30"},{"field1":"value3_10","field2":10003,"field3":"10.30"},{"field1":"value3_9","field2":9003,"field3":"9.30"},{"field1":"value3_8","field2":8003,"field3":"8.30"},{"field1":"value3_7","field2":7003,"field3":"7.30"},{"field1":"value3_6","field2":6003,"field3":"6.30"}]
+   4 | [{"field1":"value4_5","field2":5004,"field3":"5.40"},{"field1":"value4_4","field2":4004,"field3":"4.40"},{"field1":"value4_3","field2":3004,"field3":"3.40"},{"field1":"value4_2","field2":2004,"field3":"2.40"},{"field1":"value4_1","field2":1004,"field3":"1.40"},{"field1":"value4_6","field2":6004,"field3":"6.40"},{"field1":"value4_10","field2":10004,"field3":"10.40"},{"field1":"value4_9","field2":9004,"field3":"9.40"},{"field1":"value4_8","field2":8004,"field3":"8.40"},{"field1":"value4_7","field2":7004,"field3":"7.40"}]
+   5 | [{"field1":"value5_5","field2":5005,"field3":"5.50"},{"field1":"value5_4","field2":4005,"field3":"4.50"},{"field1":"value5_3","field2":3005,"field3":"3.50"},{"field1":"value5_2","field2":2005,"field3":"2.50"},{"field1":"value5_1","field2":1005,"field3":"1.50"},{"field1":"value5_6","field2":6005,"field3":"6.50"},{"field1":"value5_10","field2":10005,"field3":"10.50"},{"field1":"value5_9","field2":9005,"field3":"9.50"},{"field1":"value5_8","field2":8005,"field3":"8.50"},{"field1":"value5_7","field2":7005,"field3":"7.50"}]
+(5 rows)
+
+DROP TABLE

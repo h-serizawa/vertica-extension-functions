@@ -1,23 +1,31 @@
 #
-# Copyright (c) 2022 Hibiki Serizawa
+# Copyright (c) 2024 Hibiki Serizawa
 #
 # Description: Makefile to build implodeext function
 #
-# Create Date: August 23, 2022
+# Create Date: February 8, 2024
 # Author: Hibiki Serizawa
 #
 CXX = g++
-CXXFLAGS = -I /opt/vertica/sdk/include -Wall -shared -Wno-unused-value -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0 -g -Og
-LDFLAGS = -fPIC
-LBLIBS =
+CXXFLAGS += -I /opt/vertica/sdk/include -Wall -shared -Wno-unused-value -std=c++11 -g -Og
+LDFLAGS += -fPIC
+LBLIBS +=
+VSQL = /opt/vertica/bin/vsql
 
-SRC = implodeext.cpp
-OBJ = $(SRC:.cpp=.so)
+.PHONEY: implodeext.so install uninstall test clean
+all: implodeext.so
 
-all: $(OBJ)
+implodeext.so: implodeext.cpp /opt/vertica/sdk/include/Vertica.cpp /opt/vertica/sdk/include/BuildInfo.h
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LBLIBS)
 
-$(OBJ): $(SRC)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ /opt/vertica/sdk/include/Vertica.cpp $(LBLIBS)
+install: implodeext.so
+	$(VSQL) -f ./install.sql
+
+uninstall:
+	$(VSQL) -f ./uninstall.sql
+
+test: install
+	$(VSQL) -f ./sqltest/implodeext_test.sql > ./sqltest/implodeext_test.out
 
 clean:
-	rm -f $(OBJ)
+	rm -f implodeext.so ./sqltest/implodeext_test.out
