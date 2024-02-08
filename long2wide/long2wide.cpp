@@ -6,21 +6,10 @@
  * Create Date: February 2, 2024
  * Author: Hibiki Serizawa
  */
-#include "Vertica.h"
-#include "BuildInfo.h"
-#include "EEUDxShared.h"
 
-// Vertica version check
-// If less than 24, set not to use C++11 ABI, if not, set to use it
-#ifndef VERTICA_BUILD_ID_SDK_Version_Major
-    #error "It requires Vertica version to compile this UDx."
-#else
-    #if VERTICA_BUILD_ID_SDK_Version_Major < 24
-        #define _GLIBCXX_USE_CXX11_ABI 0
-    #else
-        #define _GLIBCXX_USE_CXX11_ABI 1
-    #endif
-#endif
+#include "BuildInfo.h"
+#include "Vertica.h"
+#include "EEUDxShared.h"
 
 #include <cstring>
 #include <iostream>

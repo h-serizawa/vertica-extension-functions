@@ -7,9 +7,9 @@
 # Author: Hibiki Serizawa
 #
 CXX = g++
-CXXFLAGS = -I /opt/vertica/sdk/include -Wall -shared -Wno-unused-value -std=c++11 -g -Og
-LDFLAGS = -fPIC
-LBLIBS =
+CXXFLAGS += -I /opt/vertica/sdk/include -Wall -shared -Wno-unused-value -std=c++11 -g -Og
+LDFLAGS += -fPIC
+LBLIBS +=
 VSQL = /opt/vertica/bin/vsql
 
 .PHONEY: long2wide.so install uninstall test clean
