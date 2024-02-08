@@ -95,19 +95,36 @@ OVER ( PARTITION BY expression[,…] )
 Set up your environment to meet C++ Requirements described on the following page.
 https://www.vertica.com/docs/latest/HTML/Content/Authoring/ExtendingVertica/UDx/DevEnvironment.htm
 
-To compile the source codes, run the following command:
+To compile the source codes in 24.1 or later version, run the following command:
 
 ```
 $ make
 ```
 
-To install Long2Wide function, run the following statement in vsql:
+In 23.4 or previous version, run the following command:
 
 ```
-=> CREATE LIBRARY long2widelib AS '<your path>/long2wide.so' LANGUAGE 'C++';
-=> CREATE TRANSFORM FUNCTION long2wide AS LANGUAGE 'C++' NAME 'Long2WideFactory' LIBRARY long2widelib NOT FENCED;
+$ CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0 make
+```
+
+To install Long2Wide function, run the following command:
+
+```
+$ make install
+```
+
+To uninstall Long2Wide function, run the following command:
+
+```
+$ make uninstall
+```
+
+To test Long2Wide function, run the following command. Output file is ./sqltest/long2wide_test.out:
+
+```
+$ make test
 ```
 
 ### Notes
 
-Long2Wide function has been tested in Vertica 11.0.1.
+Long2Wide function has been tested in Vertica 23.4 and 24.1.
