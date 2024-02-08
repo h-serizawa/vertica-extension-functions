@@ -1,23 +1,21 @@
 #
-# Copyright (c) 2022 Hibiki Serizawa
+# Copyright (c) 2024 Hibiki Serizawa
 #
 # Description: Makefile to build mallocinfo function
 #
-# Create Date: November 15, 2022
+# Create Date: February 8, 2024
 # Author: Hibiki Serizawa
 #
 CXX = g++
-CXXFLAGS = -I /opt/vertica/sdk/include -Wall -shared -Wno-unused-value -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0 -g -Og
-LDFLAGS = -fPIC
-LBLIBS =
+CXXFLAGS += -I /opt/vertica/sdk/include -Wall -shared -Wno-unused-value -std=c++11 -g -Og
+LDFLAGS += -fPIC
+LBLIBS +=
 
-SRC = mallocinfo.cpp
-OBJ = $(SRC:.cpp=.so)
+.PHONEY: mallocinfo.so clean
+all: mallocinfo.so
 
-all: $(OBJ)
-
-$(OBJ): $(SRC)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ /opt/vertica/sdk/include/Vertica.cpp $(LBLIBS)
+mallocinfo.so: mallocinfo.cpp /opt/vertica/sdk/include/Vertica.cpp /opt/vertica/sdk/include/BuildInfo.h
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LBLIBS)
 
 clean:
-	rm -f $(OBJ)
+	rm -f mallocinfo.so

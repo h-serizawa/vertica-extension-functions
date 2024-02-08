@@ -32,10 +32,16 @@ MALLOCINFO ( { ['output_filename'] | null } )
 Set up your environment to meet C++ Requirements described on the following page.
 https://www.vertica.com/docs/latest/HTML/Content/Authoring/ExtendingVertica/UDx/DevEnvironment.htm
 
-To compile the source codes, run the following command:
+To compile the source codes in 24.1 or later version, run the following command:
 
 ```
 $ make
+```
+
+In 23.4 or previous version, run the following command:
+
+```
+$ CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0 make
 ```
 
 To install MallocInfo function, run the following statement in vsql:
@@ -46,7 +52,5 @@ To install MallocInfo function, run the following statement in vsql:
 ```
 
 ### Notes
-
-MallocInfo function has been tested in Vertica 12.0.2 and 11.0.2.
 
 This function needs to be created as Unfenced UDx to trigger malloc_info() system call in Vertica process.
