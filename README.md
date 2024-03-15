@@ -22,4 +22,8 @@ All codes are provided under the license found in LICENSE file.
 
     Logs the output of malloc_info() system call on initiator node.
 
+- KafkaRemoveMagicByte filter
+
+    Removes the unexpected data in front of the JSON data consumed from Apache Kafka.
+
 Enjoy your life with Vertica!!
