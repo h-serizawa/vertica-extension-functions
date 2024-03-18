@@ -41,10 +41,9 @@ public:
                                     DataBuffer &output, LengthBuffer &outputLengths) override
     {
         debugLog(srvInterface, "processWithMetadata starts");
-        debugLog(srvInterface, "number of messages: %lu", inputLengths.size);
-
-        output.offset = 0;
-        outputLengths.offset = 0;
+        debugLog(srvInterface, " number of messages: %lu", inputLengths.size);
+        debugLog(srvInterface, "   initial input size [%lu] offset [%lu]", input.size, input.offset);
+        debugLog(srvInterface, "   initial output size [%lu] offset [%lu]", output.size, output.offset);
 
         if (inputLengths.offset == inputLengths.size) {
             if (input.offset == input.size && inputState == END_OF_FILE) {
@@ -61,19 +60,17 @@ public:
 
             if (input.offset + record_len > input.size) {
                 VIAssert(inputState != END_OF_FILE);
+                debugLog(srvInterface, " INPUT_NEEDED returned. input size: %lu, offset: %lu, record length: %lu", input.size, input.offset, record_len);
                 return INPUT_NEEDED;
             } else if (output.offset + record_len > output.size) {
-                output.offset = 0;
-                outputLengths.offset = 0;
+                debugLog(srvInterface, " OUTPUT_NEEDED returned. output size: %lu, offset: %lu, record length: %lu", output.size, output.offset, record_len);
                 return OUTPUT_NEEDED;
             }
 
             char *outbuf = output.buf + output.offset;
             const char *p = input.buf + input.offset;
             for (size_t i = 0; i < record_len; ++p, ++i) {
-                debugLog(srvInterface, "  input [%c]", p[0]);
                 if (p[0] == '{') {
-                    debugLog(srvInterface, "   found first curly bracket at [%d]", i);
                     memcpy(outbuf, p, record_len - i);
                     output.offset += record_len - i;
                     outputLengths.buf[outputLengths.offset] = record_len - i;
@@ -85,8 +82,6 @@ public:
             input.offset += record_len;
             ++inputLengths.offset;
         }
-
-        debugLog(srvInterface, " output messages [%s]", output.buf);
 
         if (inputState != END_OF_FILE) {
             return INPUT_NEEDED;
