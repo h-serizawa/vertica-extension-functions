@@ -26,4 +26,8 @@ All codes are provided under the license found in LICENSE file.
 
     Removes the unexpected data in front of the JSON data consumed from Apache Kafka.
 
+- StrimgTokenizerWithDelimiter function
+
+    Splits the string into words by splitting on user-specified delimiter. It can also be used as a tokenizer for Text Index.
+
 Enjoy your life with Vertica!!
