@@ -30,4 +30,8 @@ All codes are provided under the license found in LICENSE file.
 
     Splits the string into words by splitting on user-specified delimiter. It can also be used as a tokenizer for Text Index.
 
+- AdvancedStringTokenizer function
+
+    Separates the text into the tokens using the major and minor separators, and the tokens can include the minor separator characters. It can also be used as a tokenizer for Text Index.
+
 Enjoy your life with Vertica!!
