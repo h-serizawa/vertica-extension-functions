@@ -96,7 +96,7 @@ CREATE INDEX
 ### Installation
 
 Set up your environment to meet C++ Requirements described on the following page.
-https://www.vertica.com/docs/latest/HTML/Content/Authoring/ExtendingVertica/UDx/DevEnvironment.htm
+https://docs.vertica.com/latest/en/extending/developing-udxs/developing-with-sdk/setting-up-development-environment/
 
 To compile the source codes in 24.1 or later version, run the following command:
 
