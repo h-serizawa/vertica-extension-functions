@@ -268,14 +268,11 @@ private:
                 debugLog(srvInterface, "    Length of String value is [%ld], handling as [%ld]", tempString->length(), stringLength);
                 char *valueString = vt_allocArray(srvInterface.allocator, char, stringLength);
                 std::memset(valueString, '\0', stringLength);
-                const char *tempStringChar = tempString->str().c_str();
-                for (vsize i = 0; i < tempString->length(); ++i) {
-                    valueString[i] = tempStringChar[i];
-                }
+                std::char_traits<char>::copy(valueString, tempString->str().c_str(), stringLength);
                 itemMap[item] = (void *)valueString;
                 debugLog(srvInterface, "    Length of String value inside map is [%ld]", strlen((char *)itemMap[item]));
                 debugLog(
-                    srvInterface, "    String value set to map[%s] is [%s], value inside map is [%s]",
+                    srvInterface, "    String value set to map [%s] is [%s], value inside map is [%s]",
                     item.c_str(), tempString->str().c_str(),
                     (char *)itemMap[item]);
             }
