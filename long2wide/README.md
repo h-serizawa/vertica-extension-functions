@@ -127,4 +127,4 @@ $ make test
 
 ### Notes
 
-Long2Wide function has been tested in Vertica 23.4 and 24.1.
+Long2Wide function has been tested in OpenText Analytics Database/Vertica 25.2.
