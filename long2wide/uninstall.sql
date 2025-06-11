@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024 Hibiki Serizawa
+ * Copyright (c) 2024-2025 Hibiki Serizawa
  *
  * Description: SQL script to uninstall long2wide
  *

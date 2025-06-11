@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024 Hibiki Serizawa
+ * Copyright (c) 2024-2025 Hibiki Serizawa
  *
  * Description: Long2Wide : Transform the long-form data into the wide-form data
  *
@@ -500,13 +500,16 @@ private:
                     last = itemListSize;
                 }
             }
-            itemsSize = items.size();
+        } else {
+            items.resize(1);
+            items[0] = itemList;
+        }
+        itemsSize = items.size();
 
-            if (debugFlag == vbool_true) {
-                debugLog(srvInterface, "  Number of items is [%d]", itemsSize);
-                for (int i = 0; i < itemsSize; i++) {
-                    debugLog(srvInterface, "    items[%d] is [%s]", i, items[i].c_str());
-                }
+        if (debugFlag == vbool_true) {
+            debugLog(srvInterface, "  Number of items is [%d]", itemsSize);
+            for (int i = 0; i < itemsSize; i++) {
+                debugLog(srvInterface, "    items[%d] is [%s]", i, items[i].c_str());
             }
         }
     }
@@ -645,7 +648,7 @@ public:
         } else {
             vt_report_error(0,
                             "%s parameter or %s parameter has to be provided",
-                            ITEM_LIST, ITEM_RANGE_MAX);
+                            ITEM_LIST.c_str(), ITEM_RANGE_MAX.c_str());
         }
     }
 
