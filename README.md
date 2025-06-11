@@ -1,10 +1,10 @@
-# Vertica Extension Functions
+# OpenText Analytics Database (Vertica) Extension Functions
 
 ![GitHub](https://img.shields.io/github/license/h-serizawa/vertica-extension-functions)
 
-This repository contains the User-Defined Extension (UDx) codes to extend the processing capabilities of the Vertica Analytics Platform.
+This repository contains the User-Defined Extension (UDx) codes to extend the processing capabilities of OpenText Analytics Database / Vertica Analytics Platform.
 
-You need the Vertica SDK to compile these codes and you need the Vertica Analytics Platform to run them.
+You need the Vertica SDK to compile these codes and you need the OpenText Analytics Database to run them.
 
 All codes are provided under the license found in LICENSE file.
 
@@ -34,4 +34,4 @@ All codes are provided under the license found in LICENSE file.
 
     Separates the text into the tokens using the major and minor separators, and the tokens can include the minor separator characters. It can also be used as a tokenizer for Text Index.
 
-Enjoy your life with Vertica!!
+Enjoy your life with OpenText Analytics Database!!
